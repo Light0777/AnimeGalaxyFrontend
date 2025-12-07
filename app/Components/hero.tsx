@@ -1,24 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function HomePage() {
   const [query, setQuery] = useState("");
   const [animeList, setAnimeList] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Use environment variable for backend URL
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
   const searchAnime = async () => {
     if (!query.trim()) return;
     setLoading(true);
 
-    const res = await fetch(`http://localhost:3000/anime/search?q=${query}`);
-    const data = await res.json();
-
-    setAnimeList(data);
-    setLoading(false);
+    try {
+      const res = await fetch(`${API_URL}/anime/search?q=${query}`);
+      const data = await res.json();
+      setAnimeList(data);
+    } catch (err) {
+      console.error("Failed to fetch anime:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleKeyDown = (e: any) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") searchAnime();
   };
 
@@ -26,7 +33,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-black text-white p-6">
       <div className="max-w-3xl mx-auto">
         {/* Search Bar */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 justify-center items-center">
           <input
             type="text"
             placeholder="Search anime..."
