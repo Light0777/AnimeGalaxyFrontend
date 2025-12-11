@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Search, Loader2, Star, Calendar, Play, TrendingUp, X, ExternalLink, Volume2 } from "lucide-react";
-import TrailerPlayer from "./trailers"; // Import the custom video player
+import TrailerPlayer from "./trailers";
 
 // Define TypeScript interfaces
 interface Anime {
@@ -36,6 +36,70 @@ interface Anime {
   broadcast?: any;
   source?: string;
 }
+
+// Helper function to get gradient colors based on rank
+const getRankColor = (rank?: number) => {
+  if (!rank || rank <= 0) {
+    return {
+      primary: '#A7B0C0',
+      highlight: '#8A94A6',
+      accent: '#5C6675',
+      text: 'text-white'
+    };
+  }
+
+  if (rank <= 10) {
+    // Red gradient for top 10
+    return {
+      primary: '#FF3B30',
+      highlight: '#FF5C5C',
+      accent: '#B02222',
+      text: 'text-white'
+    };
+  } else if (rank <= 100) {
+    // Gold gradient for ranks 11-100
+    return {
+      primary: '#F7C948',
+      highlight: '#F5A623',
+      accent: '#C57F17',
+      text: 'text-black'
+    };
+  } else if (rank <= 500) {
+    // Blue gradient for ranks 101-500
+    return {
+      primary: '#3A7DFF',
+      highlight: '#5E9CFF',
+      accent: '#1F4EB8',
+      text: 'text-white'
+    };
+  } else {
+    // Gray gradient for ranks 500+
+    return {
+      primary: '#A7B0C0',
+      highlight: '#8A94A6',
+      accent: '#5C6675',
+      text: 'text-white'
+    };
+  }
+};
+
+// Rank Badge Component
+const RankBadge = ({ rank }: { rank?: number }) => {
+  const colors = getRankColor(rank);
+
+  return (
+    <div
+      className="flex items-center gap-1 px-2 py-1 backdrop-blur-sm rounded-full text-xs"
+      style={{
+        background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.highlight} 50%, ${colors.accent} 100%)`,
+        border: `1px solid ${colors.accent}`
+      }}
+    >
+      <TrendingUp className="w-3 h-3" style={{ color: colors.text === 'text-white' ? 'white' : 'black' }} />
+      <span className={`font-bold ${colors.text}`}>#{rank || 'New'}</span>
+    </div>
+  );
+};
 
 export default function HomePage() {
   const [query, setQuery] = useState("");
@@ -117,6 +181,31 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      {/* Add CSS for blur effect */}
+      <style jsx>{`
+        .blur {
+          position: absolute;
+          inset: 60% 0 -26% 0;
+          filter: blur(20px);
+          overflow: hidden;
+        }
+        .blur img {
+          object-fit: cover;
+          left: 50%;
+          transform: translateX(-50%);
+          height: 330px;
+          position: absolute;
+          bottom: 25%;
+          width: 660px;
+          mask: radial-gradient(50% 100% at 50% 90%, white 50%, transparent);
+          filter: saturate(1.5) brightness(0.8);
+        }
+        .group:hover .blur img {
+          --x: 0.1;
+          --y: 0.1;
+        }
+      `}</style>
+
       <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8">
         {/* Header - Minimal */}
         <header className="py-4 md:py-6">
@@ -133,7 +222,6 @@ export default function HomePage() {
             {/* Top Airing Trailer/Highlight */}
             <div className="mb-8">
               <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                {/* Video Player */}
                 {topAiringAnime[0]?.trailer_youtube_id ? (
                   <TrailerPlayer
                     youtubeId={topAiringAnime[0].trailer_youtube_id}
@@ -141,7 +229,6 @@ export default function HomePage() {
                     autoPlay={true}
                   />
                 ) : (
-                  // Fallback when no trailer
                   <div className="relative aspect-video bg-linear-to-br from-gray-900 to-black">
                     <img
                       src={topAiringAnime[0]?.images?.jpg?.large_image_url}
@@ -163,12 +250,6 @@ export default function HomePage() {
 
             {/* More Airing Anime Grid */}
             <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Volume2 className="w-4 h-4 text-white" />
-                  More Currently Airing
-                </h2>
-              </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {topAiringAnime.slice(1, 5).map((anime: Anime) => (
                   <div
@@ -185,7 +266,7 @@ export default function HomePage() {
                       />
 
                       {/* Blur effect overlay at bottom of image */}
-                      <div className="blur absolute">
+                      <div className="blur">
                         <img
                           src={anime.images?.jpg?.image_url}
                           alt=""
@@ -193,29 +274,28 @@ export default function HomePage() {
                         />
                       </div>
 
-                      {/* Ranking badge - top left */}
-                      <div className="absolute top-2 left-2 z-10">
-                        <div className="flex items-center gap-1 px-2 py-1 bg-red-500/90 backdrop-blur-sm rounded-full text-xs">
-                          <TrendingUp className="w-3 h-3 text-white" />
-                          <span className="font-bold">#{anime.rank || 'New'}</span>
+                      <div className="absolute inset-0 top-2 left-2 flex gap-2">
+                        {/* Ranking badge - top left */}
+                        <div className="z-10">
+                          <RankBadge rank={anime.rank} />
                         </div>
-                      </div>
 
-                      {/* Rating badge - top right */}
-                      {anime.score && (
-                        <div className="absolute top-2 left-16 z-10">
-                          <div className="flex items-center gap-1 px-2 py-1 bg-black/80 backdrop-blur-sm rounded-full text-xs">
-                            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                            <span className="font-bold">{anime.score.toFixed(1)}</span>
+                        {/* Rating badge - top right */}
+                        {anime.score && (
+                          <div className="z-10">
+                            <div className="flex items-center gap-1 px-2 py-1 bg-black/80 backdrop-blur-sm rounded-full text-xs">
+                              <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                              <span className="font-bold">{anime.score.toFixed(1)}</span>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
 
                       {/* Content overlay at bottom left of image */}
                       <div className="absolute bottom-0 left-0 right-0 p-4 bg-linear-to-t from-black/90 via-black/60 to-transparent">
                         <div className="space-y-2">
                           {/* Anime title */}
-                          <h3 className="font-bold text-white text-sm line-clamp-1">
+                          <h3 className="font-bold text-white text-xs sm:text-sm line-clamp-1">
                             {anime.title}
                           </h3>
 
@@ -247,7 +327,7 @@ export default function HomePage() {
                             {anime.genres?.slice(0, 2).map((genre) => (
                               <span
                                 key={genre.mal_id}
-                                className="px-2 py-1 bg-black/40 backdrop-blur-sm text-white text-xs rounded-full border border-white/20"
+                                className="px-2 py-1 bg-black/40 backdrop-blur-sm text-white text-[10px] sm:text-xs rounded-full border border-white/20"
                               >
                                 {genre.name}
                               </span>
@@ -256,20 +336,6 @@ export default function HomePage() {
                         </div>
                       </div>
                     </div>
-
-                    {/* Trailer link (optional) */}
-                    {/* {anime.trailer_youtube_id && (
-                      <a
-                        href={`https://www.youtube.com/watch?v=${anime.trailer_youtube_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="absolute bottom-4 right-4 z-20 inline-flex items-center gap-1 text-xs text-white bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full hover:bg-black/80 transition-colors border border-white/20"
-                      >
-                        <Play className="w-3 h-3" />
-                        Trailer
-                      </a>
-                    )} */}
                   </div>
                 ))}
               </div>
@@ -324,7 +390,7 @@ export default function HomePage() {
                       />
 
                       {/* Blur effect overlay at bottom of image */}
-                      <div className="blur absolute">
+                      <div className="blur">
                         <img
                           src={anime.images?.jpg?.image_url}
                           alt=""
@@ -332,23 +398,22 @@ export default function HomePage() {
                         />
                       </div>
 
-                      {/* Ranking badge - top left */}
-                      <div className="absolute top-2 left-2 z-10">
-                        <div className="flex items-center gap-1 px-2 py-1 bg-red-500/90 backdrop-blur-sm rounded-full text-xs">
-                          <TrendingUp className="w-3 h-3 text-white" />
-                          <span className="font-bold">#{anime.rank || 'New'}</span>
+                      <div className="absolute inset-0 top-2 left-2 flex gap-2">
+                        {/* Ranking badge - top left */}
+                        <div className="z-10">
+                          <RankBadge rank={anime.rank} />
                         </div>
-                      </div>
 
-                      {/* Rating badge - top right */}
-                      {anime.score && (
-                        <div className="absolute top-2 left-18 z-10">
-                          <div className="flex items-center gap-1 px-2 py-1 bg-black/80 backdrop-blur-sm rounded-full text-xs">
-                            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                            <span className="font-bold">{anime.score.toFixed(1)}</span>
+                        {/* Rating badge - top right */}
+                        {anime.score && (
+                          <div className=" z-10">
+                            <div className="flex items-center gap-1 px-2 py-1 bg-black/80 backdrop-blur-sm rounded-full text-xs">
+                              <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                              <span className="font-bold">{anime.score.toFixed(1)}</span>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
 
                       {/* Content overlay at bottom left of image */}
                       <div className="absolute bottom-0 left-0 right-0 p-4 bg-linear-to-t from-black/90 via-black/60 to-transparent">
@@ -390,7 +455,7 @@ export default function HomePage() {
                             {anime.genres?.slice(0, 2).map((genre) => (
                               <span
                                 key={genre.mal_id}
-                                className="px-2 py-1 bg-black/40 backdrop-blur-sm text-white text-xs rounded-full border border-white/20"
+                                className="px-2 py-1 bg-black/40 backdrop-blur-sm text-white text-[10px] sm:text-xs rounded-full border border-white/20"
                               >
                                 {genre.name}
                               </span>
@@ -426,31 +491,30 @@ export default function HomePage() {
                       />
 
                       {/* Blur effect overlay at bottom of image */}
-                      <div className="blur absolute">
+                      <div className="blur">
                         <img
                           src={anime.images?.jpg?.image_url}
                           alt=""
                           className="w-full h-full"
                         />
                       </div>
+                      <div className="absolute inset-0 top-2 left-2 flex gap-2">
 
-                      {/* Ranking badge - top left */}
-                      <div className="absolute top-2 left-2 z-10">
-                        <div className="flex items-center gap-1 px-2 py-1 bg-red-500/90 backdrop-blur-sm rounded-full text-xs">
-                          <TrendingUp className="w-3 h-3 text-white" />
-                          <span className="font-bold">#{anime.rank || 'New'}</span>
+                        {/* Ranking badge - top left */}
+                        <div className="z-10">
+                          <RankBadge rank={anime.rank} />
                         </div>
-                      </div>
 
-                      {/* Rating badge - top right */}
-                      {anime.score && (
-                        <div className="absolute top-2 left-19 z-10">
-                          <div className="flex items-center gap-1 px-2 py-1 bg-black/80 backdrop-blur-sm rounded-full text-xs">
-                            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                            <span className="font-bold">{anime.score.toFixed(1)}</span>
+                        {/* Rating badge - top right */}
+                        {anime.score && (
+                          <div className="z-10">
+                            <div className="flex items-center gap-1 px-2 py-1 bg-black/80 backdrop-blur-sm rounded-full text-xs">
+                              <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                              <span className="font-bold">{anime.score.toFixed(1)}</span>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
 
                       {/* Content overlay at bottom left of image */}
                       <div className="absolute bottom-0 left-0 right-0 p-4 bg-linear-to-t from-black/90 via-black/60 to-transparent">
@@ -492,7 +556,7 @@ export default function HomePage() {
                             {anime.genres?.slice(0, 2).map((genre) => (
                               <span
                                 key={genre.mal_id}
-                                className="px-2 py-1 bg-black/40 backdrop-blur-sm text-white text-xs rounded-full border border-white/20"
+                                className="px-2 py-1 bg-black/40 backdrop-blur-sm text-white text-[10px] sm:text-xs rounded-full border border-white/20"
                               >
                                 {genre.name}
                               </span>
@@ -519,8 +583,11 @@ export default function HomePage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full p-3 rounded-full bg-black border border-gray-700 focus:border-white focus:outline-none text-white placeholder-gray-500 pl-10"
+                className="w-full p-3 pr-24 rounded-full bg-black border border-gray-700 focus:border-white focus:outline-none text-white placeholder-gray-500 pl-10"
               />
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                <Search className="w-4 h-4 text-gray-400" />
+              </div>
 
               {/* Search button inside input field */}
               <div className="absolute right-1 top-1/2 transform -translate-y-1/2">
@@ -568,6 +635,12 @@ export default function HomePage() {
                       className="w-full rounded-lg mb-4"
                     />
 
+                    {/* Show rank with color in modal */}
+                    {selectedAnime.rank && (
+                      <div className="flex justify-center mb-4">
+                        <RankBadge rank={selectedAnime.rank} />
+                      </div>
+                    )}
                   </div>
 
                   <div className="md:col-span-2 space-y-4">
