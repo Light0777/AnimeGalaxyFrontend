@@ -94,3 +94,30 @@ iframe[src*="youtube-nocookie.com"] {
   z-index: 2;
   pointer-events: none;
 }
+
+/* Blur effect styling */
+.blur {
+  position: absolute;
+  inset: 60% 0 -26% 0;
+  filter: blur(20px);
+  overflow: hidden;
+}
+
+.blur img {
+  object-position: calc(-50% + (var(--x, 0) * 40px)) calc(47.5% + (var(--y, 0) * -40px));
+  object-fit: cover;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 330px;
+  position: absolute;
+  bottom: 25%;
+  width: 660px;
+  mask: radial-gradient(50% 100% at 50% 90%, white 50%, transparent);
+  filter: saturate(1.5) brightness(0.8);
+}
+
+/* Add hover effect for parallax-like blur movement */
+.group:hover .blur img {
+  --x: 0.1;
+  --y: 0.1;
+}
